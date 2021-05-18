@@ -11,23 +11,21 @@ const taskValidator = ({
 }) => {
   if (typeof id !== 'number') {
     console.error(`type validation failed. id: ${id} is not number...`);
-    return {};
+    return false;
   }
   if (typeof title !== 'string') {
     console.error(`type validation failed. title: ${title} is not string...`);
-    return {};
+    return false;
   }
   if (typeof description !== 'string') {
     console.error(`type validation failed. description: ${description} is not string...`);
-    return {};
+    return false;
   }
   if (typeof done !== 'boolean') {
     console.error(`type validation failed. done: ${done} is not boolean...`);
-    return {};
+    return false;
   }
-  return {
-    id, title, description, done,
-  };
+  return true;
 };
 
 export default new Vuex.Store({
@@ -61,7 +59,7 @@ export default new Vuex.Store({
         console.error(res);
         return;
       }
-      const tasks = res.data.map(taskValidator).filter(({ id }) => id !== undefined);
+      const tasks = res.data.filter(taskValidator);
       context.commit('updateTasks', tasks);
     },
     async getTaskAction(context, id) {
@@ -75,8 +73,8 @@ export default new Vuex.Store({
         console.error(res);
         return;
       }
-      const task = taskValidator(res.data);
-      if (task.id === undefined) {
+      const task = res.data;
+      if (!taskValidator(task)) {
         console.error(`task validation (id:${id}) is failed`);
         return;
       }
@@ -84,39 +82,24 @@ export default new Vuex.Store({
     },
     async postTaskAction(context, postingTaskParams) {
       const res = await axios.post(`${apiHost}/tasks`, postingTaskParams);
-      if (res.status !== 200) {
-        console.error('post task is failed');
-        console.error(res);
-        return;
-      }
-      const task = taskValidator(res.data);
-      if (task.id === undefined) {
+      const task = res.data;
+      if (!taskValidator(task)) {
         console.error('task validation is failed');
         return;
       }
       context.commit('updateTask', task);
     },
     async putTaskAction(context, taskParams) {
-      const res = await axios.put(`${apiHost}/tasks`, taskParams);
-      if (res.status !== 200) {
-        console.error('put task is failed');
-        console.error(res);
-        return;
-      }
-      const task = taskValidator(res.data);
-      if (task.id === undefined) {
+      const res = await axios.put(`${apiHost}/tasks/${taskParams.id}`, taskParams);
+      const task = res.data;
+      if (!taskValidator(task)) {
         console.error('task validation is failed');
         return;
       }
       context.commit('updateTask', task);
     },
     async deleteTaskAction(context, id) {
-      const res = await axios.delete(`${apiHost}/tasks/${id}`);
-      if (res.status !== 201) {
-        console.error('delete task is failed');
-        console.error(res);
-        return;
-      }
+      await axios.delete(`${apiHost}/tasks/${id}`);
       context.commit('deleteTask', id);
     },
   },
